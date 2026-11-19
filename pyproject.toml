@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "alembic-sentinel"
+version = "0.1.0"
+description = "Catch dangerous PostgreSQL migrations in Alembic before they reach production."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Emilio Antonio Tolosa Soto" }]
+keywords = ["alembic", "postgresql", "migrations", "linter", "sqlalchemy", "zero-downtime"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Database",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+alembic-sentinel = "alembic_sentinel.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/EmilioATS01/alembic-sentinel"
+Issues = "https://github.com/EmilioATS01/alembic-sentinel/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/alembic_sentinel"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
