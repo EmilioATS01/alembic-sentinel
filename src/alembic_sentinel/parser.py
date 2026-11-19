@@ -11,7 +11,7 @@ import ast
 from pathlib import Path
 from typing import Any
 
-from .models import UNKNOWN, MigrationFile, Operation
+from .models import UNKNOWN, Call, MigrationFile, Operation
 
 # `op.<name>` helpers that are not schema operations: never report them as operations.
 _NON_OPERATIONS = frozenset({"get_context", "get_bind", "f", "inline_literal"})
@@ -79,8 +79,8 @@ class _OperationVisitor(ast.NodeVisitor):
             self.operations.append(
                 Operation(
                     name=name,
-                    args=tuple(_literal(arg) for arg in node.args),
-                    kwargs={kw.arg: _literal(kw.value) for kw in node.keywords if kw.arg},
+                    args=tuple(_value(arg) for arg in node.args),
+                    kwargs={kw.arg: _value(kw.value) for kw in node.keywords if kw.arg},
                     lineno=node.lineno,
                     in_autocommit_block=self._autocommit_depth > 0,
                 )
@@ -106,9 +106,28 @@ def _is_autocommit_block(expr: ast.expr) -> bool:
     )
 
 
-def _literal(node: ast.expr) -> Any:
-    """Return the Python value of a literal node, or UNKNOWN if it isn't a literal."""
+def _value(node: ast.expr) -> Any:
+    """Return a literal's Python value, a `Call` for `name(...)` calls, otherwise UNKNOWN."""
+    if isinstance(node, ast.Call):
+        qualname = _dotted_name(node.func)
+        if qualname is None:
+            return UNKNOWN
+        return Call(
+            qualname=qualname,
+            args=tuple(_value(arg) for arg in node.args),
+            kwargs={kw.arg: _value(kw.value) for kw in node.keywords if kw.arg},
+        )
     try:
         return ast.literal_eval(node)
     except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
         return UNKNOWN
+
+
+def _dotted_name(node: ast.expr) -> str | None:
+    """Return "sa.Column" for `sa.Column`, "Column" for `Column`, otherwise None."""
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        base = _dotted_name(node.value)
+        return f"{base}.{node.attr}" if base is not None else None
+    return None

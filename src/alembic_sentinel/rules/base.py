@@ -11,8 +11,14 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any
 
 from ..models import Operation, Severity, Violation
+
+
+def quote(value: Any, fallback: str) -> str:
+    """Return "'users'" for a string value, otherwise `fallback` (e.g. "the table")."""
+    return f"'{value}'" if isinstance(value, str) else fallback
 
 
 class Rule(ABC):

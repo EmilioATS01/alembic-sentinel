@@ -36,6 +36,34 @@ UNKNOWN: Any = _Unknown()
 
 
 @dataclass(frozen=True)
+class Call:
+    """A function call used as an argument value, e.g. `sa.Column("email", nullable=False)`.
+
+    Its own arguments are parsed the same way as an operation's: literals when possible,
+    nested `Call`s for calls, otherwise UNKNOWN.
+    """
+
+    qualname: str
+    """Dotted name as written, e.g. "sa.Column" or "Column"."""
+
+    args: tuple[Any, ...] = ()
+    kwargs: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def name(self) -> str:
+        """Last part of the dotted name: "Column" for `sa.Column(...)`."""
+        return self.qualname.rsplit(".", 1)[-1]
+
+    def arg(self, position: int, keyword: str, default: Any = None) -> Any:
+        """Return an argument that may be passed positionally or by keyword."""
+        if keyword in self.kwargs:
+            return self.kwargs[keyword]
+        if len(self.args) > position:
+            return self.args[position]
+        return default
+
+
+@dataclass(frozen=True)
 class Operation:
     """A single `op.<name>(...)` call found inside a migration's `upgrade()` function."""
 
@@ -43,10 +71,10 @@ class Operation:
     """Operation name, e.g. "create_index", "add_column"."""
 
     args: tuple[Any, ...]
-    """Positional arguments, as Python literals when possible, otherwise UNKNOWN."""
+    """Positional arguments: Python literals, `Call`s (e.g. `sa.Column(...)`), or UNKNOWN."""
 
     kwargs: dict[str, Any]
-    """Keyword arguments, as Python literals when possible, otherwise UNKNOWN."""
+    """Keyword arguments: Python literals, `Call`s, or UNKNOWN."""
 
     lineno: int
     """1-based line number of the call in the source file."""

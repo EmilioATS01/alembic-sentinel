@@ -24,7 +24,17 @@ def test_check_exits_0_when_clean():
 def test_check_accepts_directories():
     result = runner.invoke(app, ["check", str(FIXTURES)])
     assert result.exit_code == 1
-    assert "1 problem(s) found" in result.output
+    # 3 errors (AS001, AS002, AS003) + 2 warnings (AS004, AS005) across the fixtures.
+    assert "5 problem(s) found" in result.output
+    for rule_id in ("AS001", "AS002", "AS003", "AS004", "AS005"):
+        assert rule_id in result.output
+
+
+def test_warnings_alone_exit_0():
+    result = runner.invoke(app, ["check", str(FIXTURES / "warning_alter_type_and_drop.py")])
+    assert result.exit_code == 0
+    assert "warning" in result.output
+    assert "2 problem(s) found" in result.output
 
 
 def test_json_output():
@@ -39,4 +49,5 @@ def test_json_output():
 def test_rules_command_lists_rules():
     result = runner.invoke(app, ["rules"])
     assert result.exit_code == 0
-    assert "AS001" in result.output
+    for rule_id in ("AS001", "AS002", "AS003", "AS004", "AS005"):
+        assert rule_id in result.output

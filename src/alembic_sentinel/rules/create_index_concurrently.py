@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..models import UNKNOWN, Operation, Severity, Violation
-from .base import Rule
+from ..models import Operation, Severity, Violation
+from .base import Rule, quote
 
 
 class CreateIndexConcurrently(Rule):
@@ -24,14 +24,12 @@ class CreateIndexConcurrently(Rule):
             return None
 
         concurrently = op.kwargs.get("postgresql_concurrently", False)
-        if concurrently is True or concurrently is UNKNOWN:
-            # UNKNOWN: the value comes from a variable; don't guess (no false positives).
+        if concurrently is not False:
+            # True, or a variable / function call we can't evaluate: don't guess.
             return None
 
-        index_name = op.arg(0, "index_name", UNKNOWN)
-        table = op.arg(1, "table_name", UNKNOWN)
-        index_label = f"'{index_name}'" if index_name is not UNKNOWN else "an index"
-        table_label = f"'{table}'" if table is not UNKNOWN else "the table"
+        index_label = quote(op.arg(0, "index_name"), "an index")
+        table_label = quote(op.arg(1, "table_name"), "the table")
 
         return self.violation(
             op,

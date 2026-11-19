@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from alembic_sentinel.models import UNKNOWN
+from alembic_sentinel.models import UNKNOWN, Call
 from alembic_sentinel.parser import MigrationParseError, parse_file, parse_source
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -54,3 +54,22 @@ def upgrade():
     ops = parse_source(source).operations
     assert [op.name for op in ops] == ["execute"]
     assert ops[0].in_autocommit_block
+
+
+def test_calls_are_parsed_as_call_values():
+    source = """
+def upgrade():
+    op.add_column("t", sa.Column("c", sa.String(20), nullable=False, server_default=sa.text("x")))
+"""
+    column = parse_source(source).operations[0].args[1]
+    assert isinstance(column, Call)
+    assert column.qualname == "sa.Column" and column.name == "Column"
+    assert column.arg(0, "name") == "c"
+    assert column.args[1] == Call("sa.String", (20,), {})
+    assert column.kwargs["nullable"] is False
+    assert column.kwargs["server_default"].name == "text"
+
+
+def test_calls_on_non_names_are_unknown():
+    source = 'def upgrade():\n    op.add_column("t", get_factory()("c"))\n'
+    assert parse_source(source).operations[0].args[1] is UNKNOWN

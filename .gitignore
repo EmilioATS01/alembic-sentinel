@@ -11,3 +11,6 @@ build/
 htmlcov/
 .idea/
 .vscode/
+
+# Local downloads from Claude conversations
+Claude outputs/

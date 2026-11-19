@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "alembic-sentinel"
-version = "0.1.0"
+version = "0.2.0"
 description = "Catch dangerous PostgreSQL migrations in Alembic before they reach production."
 readme = "README.md"
 license = "MIT"
