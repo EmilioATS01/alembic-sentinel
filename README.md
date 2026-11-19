@@ -1,5 +1,5 @@
 # alembic-sentinel
-
+[![CI](https://github.com/EmilioATS01/alembic-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/EmilioATS01/alembic-sentinel/actions/workflows/ci.yml)
 **Catch dangerous PostgreSQL migrations in Alembic before they reach production.**
 
 Some schema changes look harmless in code review but lock a production table for minutes:
